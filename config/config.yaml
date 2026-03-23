@@ -1,0 +1,11 @@
+samples:
+  - sample1
+  - sample2
+  - sample3
+  - sample4
+  - sample5
+  - sample6
+
+star_index: "data/star_index/"
+gtf_file:   "data/genome/Mus_musculus.GRCm39.111.gtf"
+genome:     "data/genome/Mus_musculus.GRCm39.dna.primary_assembly.fa"

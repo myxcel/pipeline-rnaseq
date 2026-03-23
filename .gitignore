@@ -1,0 +1,11 @@
+# Données trop volumineuses pour GitHub
+data/raw/
+data/genome/
+data/star_index/
+results/aligned/
+results/trimmed/
+
+# Garder les figures et résultats légers
+!results/deseq2/*.png
+!results/deseq2/*.csv
+!results/qc/multiqc_report.html
