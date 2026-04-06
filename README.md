@@ -29,10 +29,16 @@ Dataset : GSE167665 (GEO, NCBI) — cortex murin, stades embryonnaire et adulte.
 ```bash
 git clone https://github.com/myxcel/pipeline-rnaseq
 cd pipeline-rnaseq
-mamba env create -f envs/qc.yaml   # répéter pour align.yaml et deseq2.yaml
+conda env create -f envs/qc.yaml
+#...
+conda env create -f envs/align.yaml
+#...
+conda env create -f envs/deseq2.yaml
+#...
 snakemake --use-conda --cores 8
 ```
 
 ## Résultats principaux
 
-[Insérer ici les figures PCA, volcano plot, dot plot GO une fois générés]
+[En cours, il faut *beaucoup* de RAM pour l'alignement chez les mammifères...]
+

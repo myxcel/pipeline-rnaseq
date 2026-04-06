@@ -1,94 +1,117 @@
-# Snakefile principal
 configfile: "config/config.yaml"
 
 SAMPLES = config["samples"]
+READS = ["1", "2"]
 
-# ── Règle finale : tous les résultats désirés ──────
 rule all:
     input:
-        "results/qc/multiqc_report.html",
-        "results/deseq2/PCA_plot.png",
-        "results/deseq2/Volcano_plot.png",
-        "results/deseq2/Heatmap_top50.png",
-        "results/deseq2/GO_dotplot_UP.png"
+        "results/qc/raw/multiqc_report.html",
+        "results/qc/trimmed/multiqc_report.html",
+        expand("data/trimmed/{sample}_{read}.trimmed.fastq.gz", sample=SAMPLES, read=READS)
 
-# ── FastQC ─────────────────────────────────────────
-rule fastqc:
-    input:  "data/raw/{sample}_{read}.fastq.gz"
-    output: "results/qc/fastqc/{sample}_{read}_fastqc.html"
-    conda:  "envs/qc.yaml"
+#rule all:
+#    input:
+#        "results/qc/raw/multiqc_report.html",
+#        "results/qc/trimmed/multiqc_report.html",
+#        expand("data/trimmed/{sample}_{read}.trimmed.fastq.gz", sample=SAMPLES, read=READS),
+#        expand("results/aligned/{sample}.bam", sample=SAMPLES),
+#        expand("results/aligned/{sample}.bam.bai", sample=SAMPLES),
+#        "results/counts/counts_matrix.txt",
+#        "results/deseq2/DE_results.csv",
+#        "results/deseq2/PCA_plot.png",
+#        "results/deseq2/Volcano_plot.png",
+#        "results/deseq2/Heatmap_top50.png",
+#        "results/deseq2/GO_dotplot_UP.png",
+#        "results/deseq2/GO_dotplot_DOWN.png"
+
+rule fastqc_raw:
+    input:
+        "data/raw/{sample}_{read}.fastq.gz"
+    output:
+        html="results/qc/raw/fastqc/{sample}_{read}_fastqc.html",
+        zip="results/qc/raw/fastqc/{sample}_{read}_fastqc.zip"
+    conda:
+        "envs/qc.yaml"
     threads: 2
-    shell:  "fastqc {input} -o results/qc/fastqc/ -t {threads}"
+    shell:
+        "mkdir -p results/qc/raw/fastqc && "
+        "fastqc {input} --outdir results/qc/raw/fastqc --threads {threads}"
 
-# ── MultiQC ────────────────────────────────────────
-rule multiqc:
-    input:  expand("results/qc/fastqc/{sample}_{read}_fastqc.html",
-                   sample=SAMPLES, read=["1","2"])
-    output: "results/qc/multiqc_report.html"
-    conda:  "envs/qc.yaml"
-    shell:  "multiqc results/qc/fastqc/ -o results/qc/ -n multiqc_report.html"
+rule multiqc_raw:
+    input:
+        expand("results/qc/raw/fastqc/{sample}_{read}_fastqc.html", sample=SAMPLES, read=READS)
+    output:
+        "results/qc/raw/multiqc_report.html"
+    conda:
+        "envs/qc.yaml"
+    shell:
+        "mkdir -p results/qc/raw && "
+        "multiqc results/qc/raw/fastqc --outdir results/qc/raw --filename multiqc_report.html"
 
-# ── fastp (trimming) ───────────────────────────────
 rule fastp:
     input:
-        r1 = "data/raw/{sample}_1.fastq.gz",
-        r2 = "data/raw/{sample}_2.fastq.gz"
+        r1="data/raw/{sample}_1.fastq.gz",
+        r2="data/raw/{sample}_2.fastq.gz"
     output:
-        r1 = "results/trimmed/{sample}_1_trimmed.fastq.gz",
-        r2 = "results/trimmed/{sample}_2_trimmed.fastq.gz"
-    conda:  "envs/qc.yaml"
-    threads: 4
+        r1="data/trimmed/{sample}_1.trimmed.fastq.gz",
+        r2="data/trimmed/{sample}_2.trimmed.fastq.gz",
+        html="results/qc/fastp/{sample}_fastp.html",
+        json="results/qc/fastp/{sample}_fastp.json"
+    conda:
+        "envs/qc.yaml"
+    threads: 8
     shell:
-        "fastp --in1 {input.r1} --in2 {input.r2} "
+        "mkdir -p data/trimmed results/qc/fastp && "
+        "fastp "
+        "--in1 {input.r1} --in2 {input.r2} "
         "--out1 {output.r1} --out2 {output.r2} "
-        "--thread {threads} --detect_adapter_for_pe "
-        "--qualified_quality_phred 20 --length_required 36"
+        "--detect_adapter_for_pe "
+        "--cut_front --cut_tail "
+        "--cut_window_size 4 --cut_mean_quality 20 "
+        "--length_required 36 "
+        "--thread {threads} "
+        "--html {output.html} --json {output.json}"
 
-# ── STAR (alignement) ──────────────────────────────
-rule star_align:
+rule fastqc_trimmed:
     input:
-        r1    = "results/trimmed/{sample}_1_trimmed.fastq.gz",
-        r2    = "results/trimmed/{sample}_2_trimmed.fastq.gz",
-        index = config["star_index"]
+        "data/trimmed/{sample}_{read}.trimmed.fastq.gz"
     output:
-        bam   = "results/aligned/{sample}_Aligned.sortedByCoord.out.bam",
-        bai   = "results/aligned/{sample}_Aligned.sortedByCoord.out.bam.bai"
-    conda:  "envs/align.yaml"
-    threads: 8
+        html="results/qc/trimmed/fastqc/{sample}_{read}.trimmed_fastqc.html",
+        zip="results/qc/trimmed/fastqc/{sample}_{read}.trimmed_fastqc.zip"
+    conda:
+        "envs/qc.yaml"
+    threads: 2
     shell:
-        "STAR --runThreadN {threads} "
-        "--genomeDir {input.index} "
-        "--readFilesIn {input.r1} {input.r2} "
-        "--readFilesCommand zcat "
-        "--outSAMtype BAM SortedByCoordinate "
-        "--outFileNamePrefix results/aligned/{wildcards.sample}_ && "
-        "samtools index {output.bam}"
+        "mkdir -p results/qc/trimmed/fastqc && "
+        "fastqc {input} --outdir results/qc/trimmed/fastqc --threads {threads}"
 
-# ── featureCounts ──────────────────────────────────
-rule featurecounts:
+rule multiqc_trimmed:
     input:
-        bams = expand("results/aligned/{sample}_Aligned.sortedByCoord.out.bam",
-                      sample=SAMPLES),
-        gtf  = config["gtf_file"]
-    output: "results/counts/counts_matrix.txt"
-    conda:  "envs/align.yaml"
-    threads: 8
-    shell:
-        "featureCounts -T {threads} -p --countReadPairs -s 2 "
-        "-a {input.gtf} -o {output} {input.bams}"
-
-# ── DESeq2 + GO (R) ────────────────────────────────
-rule deseq2:
-    input:  "results/counts/counts_matrix.txt"
+        expand("results/qc/trimmed/fastqc/{sample}_{read}.trimmed_fastqc.html", sample=SAMPLES, read=READS)
     output:
-        pca     = "results/deseq2/PCA_plot.png",
-        volcano = "results/deseq2/Volcano_plot.png",
-        heatmap = "results/deseq2/Heatmap_top50.png"
-    conda:  "envs/deseq2.yaml"
-    script: "scripts/deseq2_analysis.R"
+        "results/qc/trimmed/multiqc_report.html"
+    conda:
+        "envs/qc.yaml"
+    shell:
+        "mkdir -p results/qc/trimmed && "
+        "multiqc results/qc/trimmed/fastqc --outdir results/qc/trimmed --filename multiqc_report.html"
 
-rule go_enrichment:
-    input:  "results/deseq2/DE_results.csv"
-    output: "results/deseq2/GO_dotplot_UP.png"
-    conda:  "envs/deseq2.yaml"
-    script: "scripts/go_enrichment.R"
+rule star_index:
+    input:
+        fasta=config["reference_fasta"],
+        gtf=config["reference_gtf"]
+    output:
+        directory(config["star_index_dir"])
+    conda:
+        "envs/align.yaml"
+    threads: 8
+    params:
+        sjdb_overhang=lambda wc: config.get("sjdb_overhang", 99),
+        sa_index_bases=lambda wc: config.get("genomeSAindexNbases", 14)
+    shell:
+        "mkdir -p {output} && "
+        "STAR --runMode genomeGenerate "
+        "--runThreadN {threads} "
+        "--genomeDir {output} "
+        "--genomeFastaFiles {input.fasta} "
+

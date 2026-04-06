@@ -1,11 +1,20 @@
 samples:
-  - sample1
-  - sample2
-  - sample3
-  - sample4
-  - sample5
-  - sample6
+  - SRR13791141
+  - SRR13791143
+  - SRR13791145
 
-star_index: "data/star_index/"
-gtf_file:   "data/genome/Mus_musculus.GRCm39.111.gtf"
-genome:     "data/genome/Mus_musculus.GRCm39.dna.primary_assembly.fa"
+reference_fasta: "data/genome/Mus_musculus.GRCm39.dna.primary_assembly.fa"
+reference_gtf: "data/genome/Mus_musculus.GRCm39.111.gtf"
+star_index_dir: "data/star_index"
+
+# 0 = non-stranded, 1 = stranded forward, 2 = stranded reverse
+strandedness: 0
+
+# Pour des reads de 100 nt, mettre 99 ; pour 150 nt, mettre 149
+sjdb_overhang: 99
+
+# Réduire seulement si RAM limitée sur petits génomes de test
+genomeSAindexNbases: 14
+
+sample_metadata: "metadata/samples.tsv"
+

@@ -5,12 +5,13 @@ channels:
   - r
   - defaults
 dependencies:
-  - r-base=4.3.3
-  - bioconductor-deseq2=1.42.0
-  - bioconductor-clusterprofiler=4.10.0
-  - bioconductor-org.mm.eg.db=3.18.0
-  - r-ggplot2=3.5.0
-  - r-pheatmap=1.0.12
-  - r-enhancedvolcano=1.20.0
-  - r-dplyr=1.1.4
-  - r-readr=2.1.5
+  - r-base
+  - bioconductor-deseq2
+  - bioconductor-clusterprofiler
+  - bioconductor-org.mm.eg.db
+  - r-ggplot2
+  - r-pheatmap
+#  - r-enhancedvolcano
+  - r-dplyr
+  - r-readr
+

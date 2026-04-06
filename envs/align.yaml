@@ -4,6 +4,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - star=2.7.11b
-  - samtools=1.19
-  - subread=2.0.6    # contient featureCounts
+  - star
+  - samtools
+  - subread    # contient featureCounts
+
